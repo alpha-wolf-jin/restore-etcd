@@ -528,8 +528,43 @@ From the recovery host, verify that the etcd container is running.
 [root@helper ~]# oc get pods -n openshift-etcd | grep -v etcd-quorum-guard | grep etcd
 etcd-master0.ocp4.example.com                 1/1     Running     0          20m
 
-```
+[root@helper ~]# oc project openshift-etcd
 
+[root@helper ~]# oc rsh etcd-master0.ocp4.example.com
+sh-4.4# etcdctl member list -w table
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+|        ID        | STATUS  |           NAME           |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+| 5c4e8fc21b8ab4b4 | started | master0.ocp4.example.com | https://192.168.9.97:2380 | https://192.168.9.97:2379 |      false |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+sh-4.4# 
+sh-4.4# etcdctl endpoint status -w table
+{"level":"warn","ts":"2022-10-24T07:30:45.645Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0003bc8c0/192.168.9.97:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.98:2379: connect: connection refused\""}
+Failed to get the status of endpoint https://192.168.9.98:2379 (context deadline exceeded)
+{"level":"warn","ts":"2022-10-24T07:30:50.646Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0003bc8c0/192.168.9.97:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.99:2379: connect: connection refused\""}
+Failed to get the status of endpoint https://192.168.9.99:2379 (context deadline exceeded)
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+|         ENDPOINT          |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| https://192.168.9.97:2379 | 5c4e8fc21b8ab4b4 |   3.5.3 |  120 MB |      true |      false |         2 |      77594 |              77594 |        |
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+sh-4.4# etcdctl endpoint health
+{"level":"warn","ts":"2022-10-24T07:31:24.737Z","logger":"client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0000d2000/192.168.9.98:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.98:2379: connect: connection refused\""}
+{"level":"warn","ts":"2022-10-24T07:31:24.737Z","logger":"client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc00043c380/192.168.9.99:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.99:2379: connect: connection refused\""}
+https://192.168.9.97:2379 is healthy: successfully committed proposal: took = 10.745182ms
+https://192.168.9.98:2379 is unhealthy: failed to commit proposal: context deadline exceeded
+https://192.168.9.99:2379 is unhealthy: failed to commit proposal: context deadline exceeded
+Error: unhealthy cluster
+sh-4.4# exit
+
+[root@helper files]# oc get secret | grep master1
+etcd-peer-master1.ocp4.example.com              kubernetes.io/tls                     2      2d3h
+etcd-serving-master1.ocp4.example.com           kubernetes.io/tls                     2      2d3h
+etcd-serving-metrics-master1.ocp4.example.com   kubernetes.io/tls                     2      2d3h
+
+```
+**Replacing an unhealthy etcd member whose machine is not running or whose node is not ready**
+https://docs.openshift.com/container-platform/4.9/backup_and_restore/control_plane_backup_and_restore/replacing-unhealthy-etcd-member.html?extIdCarryOver=true&sc_cid=701f2000001OH7YAAW#restore-replace-stopped-etcd-member_replacing-unhealthy-etcd-member**
 
 ```
 [core@master1 ~]$ sudo crictl ps | grep etcd | grep -v operator
@@ -537,4 +572,88 @@ etcd-master0.ocp4.example.com                 1/1     Running     0          20m
 [core@master2 ~]$ sudo crictl ps | grep etcd | grep -v operator
 [core@master2 ~]$ 
 
+```
+**How to replace all master nodes in OpenShift Container Platform 4**
+https://access.redhat.com/articles/6270901
+
+# Delete and recreate other non-recovery, control plane machines, one by one.
+
+After these machines are recreated, a new revision is forced and etcd scales up automatically.
+
+If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps. Otherwise, you must create the new control plane node using the same method that was used to originally create it.
+
+```
+[root@helper ~]# oc delete node master2.ocp4.example.com
+node "master2.ocp4.example.com" deleted
+[root@helper ~]# oc get node
+NAME                       STATUS   ROLES    AGE    VERSION
+master0.ocp4.example.com   Ready    master   2d3h   v1.23.5+8471591
+master1.ocp4.example.com   Ready    master   2d3h   v1.23.5+8471591
+worker0.ocp4.example.com   Ready    worker   2d3h   v1.23.5+8471591
+worker1.ocp4.example.com   Ready    worker   2d3h   v1.23.5+8471591
+
+[root@helper files]# oc get secret -n openshift-etcd | grep master2
+etcd-peer-master2.ocp4.example.com              kubernetes.io/tls                     2      2d3h
+etcd-serving-master2.ocp4.example.com           kubernetes.io/tls                     2      2d3h
+etcd-serving-metrics-master2.ocp4.example.com   kubernetes.io/tls                     2      2d3h
+
+
+```
+
+**Master2 create the new control plane node using the same method that was used to originally create it**
+
+```
+[root@helper files]# oc get csr
+NAME        AGE    SIGNERNAME                                    REQUESTOR                                                                   REQUESTEDDURATION   CONDITION
+csr-bf8zg   109s   kubernetes.io/kube-apiserver-client-kubelet   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   <none>              Pending
+[root@helper files]# oc adm certificate approve csr-bf8zg
+certificatesigningrequest.certificates.k8s.io/csr-bf8zg approved
+
+[root@helper files]# oc get csr | grep -i pend
+csr-d5lkt   89s     kubernetes.io/kubelet-serving                 system:node:master2.ocp4.example.com                                        <none>              Pending
+[root@helper files]# oc adm certificate approve csr-d5lkt
+certificatesigningrequest.certificates.k8s.io/csr-d5lkt approved
+
+```
+
+```
+# oc delete node master1.ocp4.example.com
+
+# oc get node
+NAME                       STATUS   ROLES    AGE     VERSION
+master0.ocp4.example.com   Ready    master   2d4h    v1.23.5+8471591
+master2.ocp4.example.com   Ready    master   3m12s   v1.23.5+8471591
+worker0.ocp4.example.com   Ready    worker   2d3h    v1.23.5+8471591
+worker1.ocp4.example.com   Ready    worker   2d3h    v1.23.5+8471591
+
+```
+
+**Master2 create the new control plane node using the same method that was used to originally create it**
+```
+# oc get csr | grep -i pend
+csr-tcdpc   2m19s   kubernetes.io/kube-apiserver-client-kubelet   system:serviceaccount:openshift-machine-config-operator:node-bootstrapper   <none>              Pending
+
+[root@helper files]# oc adm certificate approve csr-tcdpc
+
+# oc get csr | grep -i pend
+csr-2fhls   39s     kubernetes.io/kubelet-serving                 system:node:master1.ocp4.example.com                                        <none>              Pending
+[root@helper files]# oc adm certificate approve csr-2fhls
+certificatesigningrequest.certificates.k8s.io/csr-2fhls approved
+
+# oc get node
+NAME                       STATUS   ROLES    AGE    VERSION
+master0.ocp4.example.com   Ready    master   2d4h   v1.23.5+8471591
+master1.ocp4.example.com   Ready    master   86s    v1.23.5+8471591
+master2.ocp4.example.com   Ready    master   15m    v1.23.5+8471591
+worker0.ocp4.example.com   Ready    worker   2d3h   v1.23.5+8471591
+worker1.ocp4.example.com   Ready    worker   2d3h   v1.23.5+8471591
+
+```
+**Project "ocp-etcd-restore" is revovered**
+```
+# oc get project | grep etcd
+ocp-etcd-backup                                    Backup ETCD Automation   Active
+ocp-etcd-restore                                                            Active
+openshift-etcd                                                              Active
+openshift-etcd-operator                                                     Active
 ```
