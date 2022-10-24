@@ -87,7 +87,7 @@ roleRef:
 # oc adm policy add-scc-to-user privileged -z openshift-backup
 ```
 
-**Create Backup CronJob
+**Create Backup CronJob**
 ```
 # oc apply -f cluster-role-binding-etcd-bkp.yml
 clusterrolebinding.rbac.authorization.k8s.io/openshift-backup created
@@ -271,6 +271,9 @@ static-pod-resources/kube-scheduler-pod-8/kube-scheduler-pod.yaml
 ```
 
 **Check the nodes to ensure they are in the Ready state.**
+
+Wait for ~5 minis in lab environment
+
 ```
 # oc get node
 NAME                       STATUS   ROLES    AGE   VERSION
@@ -291,6 +294,33 @@ From the recovery host, run the following command:
 Error from server (ServiceUnavailable): the server is currently unable to handle the request (get projects.project.openshift.io)
 
 [core@master0 ~]$ sudo systemctl restart kubelet.service
+
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 06:29:20 UTC; 52s ago
+  Process: 92371 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 92369 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 92367 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 92373 (kubelet)
+    Tasks: 18 (limit: 63249)
+   Memory: 158.7M
+      CPU: 11.720s
+   CGroup: /system.slice/kubelet.service
+           └─92373 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime=remote --contai>
+
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.138415   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"env-overrides\" (UniqueName: \"k>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.138587   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"env-overrides\" (UniqueName: \"k>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.138782   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"node-tuning-operator-tls\" (Uniq>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.138934   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"config\" (UniqueName: \"kubernet>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.139231   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"auth-proxy-config\" (UniqueName:>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.362506   92373 scope.go:110] "RemoveContainer" containerID="728b2156c84d690ac19f1efae4fb1bd58bd1ad6f328dd203d4bf65ff4>
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.760636   92373 logs.go:319] "Finished parsing log file" path="/var/log/pods/openshift-machine-api_cluster-autoscaler->
+Oct 24 06:29:45 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:45.761098   92373 kubelet.go:2163] "SyncLoop (PLEG): event for pod" pod="openshift-machine-api/cluster-autoscaler-operat>
+Oct 24 06:29:47 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:47.159814   92373 reconciler.go:258] "operationExecutor.MountVolume started for volume \"kube-api-access-hq9fv\" (Unique>
+Oct 24 06:29:47 master0.ocp4.example.com hyperkube[92373]: I1024 06:29:47.160550   92373 operation_generator.go:756] "MountVolume.SetUp succeeded for volume \"kube-api-access-hq9fv\" (UniqueN>
+~
 
 [core@master0 ~]$ sudo systemctl status kubelet.service
 ● kubelet.service - Kubernetes Kubelet
@@ -333,6 +363,34 @@ On master1
    Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
   Drop-In: /etc/systemd/system/kubelet.service.d
            └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 06:33:36 UTC; 1min 27s ago
+  Process: 55858 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 55855 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 55853 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 55860 (kubelet)
+    Tasks: 16 (limit: 63249)
+   Memory: 95.4M
+      CPU: 8.895s
+   CGroup: /system.slice/kubelet.service
+           └─55860 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime=remote --contai>
+
+Oct 24 06:34:52 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:52.694068   55860 patch_prober.go:29] interesting pod/kube-apiserver-guard-master1.ocp4.example.com container/guard name>
+Oct 24 06:34:52 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:52.694128   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-kube-apiserver/kube-apiserver-guard>
+Oct 24 06:34:53 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:53.962845   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-etcd/etcd-quorum-guard-78f4445675-2>
+Oct 24 06:34:56 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:56.816989   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-etcd/etcd-quorum-guard-78f4445675-2>
+Oct 24 06:34:57 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:57.694495   55860 patch_prober.go:29] interesting pod/kube-apiserver-guard-master1.ocp4.example.com container/guard name>
+Oct 24 06:34:57 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:57.694556   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-kube-apiserver/kube-apiserver-guard>
+Oct 24 06:34:58 master1.ocp4.example.com hyperkube[55860]: I1024 06:34:58.956798   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-etcd/etcd-quorum-guard-78f4445675-2>
+Oct 24 06:35:02 master1.ocp4.example.com hyperkube[55860]: I1024 06:35:02.693788   55860 patch_prober.go:29] interesting pod/kube-apiserver-guard-master1.ocp4.example.com container/guard name>
+Oct 24 06:35:02 master1.ocp4.example.com hyperkube[55860]: I1024 06:35:02.693845   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-kube-apiserver/kube-apiserver-guard>
+Oct 24 06:35:03 master1.ocp4.example.com hyperkube[55860]: I1024 06:35:03.946958   55860 prober.go:121] "Probe failed" probeType="Readiness" pod="openshift-etcd/etcd-quorum-guard-78f4445675-2>
+[core@master1 ~]$ 
+
+[core@master1 ~]$ sudo systemctl status kubelet.service
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
    Active: active (running) since Mon 2022-10-24 01:59:14 UTC; 42s ago
   Process: 114004 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
   Process: 114002 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
@@ -360,6 +418,35 @@ Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:56.37758
 On master2
 ```
 [core@master2 ~]$ sudo systemctl restart kubelet.service
+
+[core@master2 ~]$ sudo systemctl status kubelet.service
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 06:37:00 UTC; 1min 11s ago
+  Process: 110223 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 110221 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 110219 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 110225 (kubelet)
+    Tasks: 17 (limit: 63249)
+   Memory: 107.3M
+      CPU: 9.849s
+   CGroup: /system.slice/kubelet.service
+           └─110225 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/var/lib/kubelet/kubeconfig --container-runtime=remote --conta>
+
+Oct 24 06:38:11 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:11.942381  110225 scope.go:110] "RemoveContainer" containerID="37a332f14a9bd8df009c143980b4c254bf78a67bf0d4beb4fe55bf8c>
+Oct 24 06:38:11 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:11.949063  110225 kuberuntime_container.go:729] "Killing container with a grace period" pod="openshift-marketplace/cert>
+Oct 24 06:38:11 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:11.983026  110225 kubelet.go:2141] "SyncLoop DELETE" source="api" pods=[openshift-marketplace/redhat-marketplace-t2g47]
+Oct 24 06:38:11 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:11.989410  110225 kubelet.go:2135] "SyncLoop REMOVE" source="api" pods=[openshift-marketplace/redhat-marketplace-t2g47]
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:12.015269  110225 scope.go:110] "RemoveContainer" containerID="37a332f14a9bd8df009c143980b4c254bf78a67bf0d4beb4fe55bf8c>
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: E1024 06:38:12.015991  110225 remote_runtime.go:597] "ContainerStatus from runtime service failed" err="rpc error: code = NotFound >
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:12.016038  110225 pod_container_deletor.go:52] "DeleteContainer returned error" containerID={Type:cri-o ID:37a332f14a9b>
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:12.535233  110225 reconciler.go:192] "operationExecutor.UnmountVolume started for volume \"kube-api-access-2hwzb\" (Uni>
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:12.545161  110225 operation_generator.go:910] UnmountVolume.TearDown succeeded for volume "kubernetes.io/projected/39dd>
+Oct 24 06:38:12 master2.ocp4.example.com hyperkube[110225]: I1024 06:38:12.636464  110225 reconciler.go:300] "Volume detached for volume \"kube-api-access-2hwzb\" (UniqueName: \"kubernetes.io>
+[core@master2 ~]$ 
+
 [core@master2 ~]$ sudo systemctl status kubelet.service
 ● kubelet.service - Kubernetes Kubelet
    Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
@@ -399,6 +486,32 @@ master1.ocp4.example.com   NotReady   master   38h   v1.23.5+8471591
 master2.ocp4.example.com   NotReady   master   38h   v1.23.5+8471591
 worker0.ocp4.example.com   NotReady   worker   38h   v1.23.5+8471591
 worker1.ocp4.example.com   NotReady   worker   38h   v1.23.5+8471591
+
+[root@helper ~]# oc get pod -n openshift-etcd -o wide
+NAME                                          READY   STATUS      RESTARTS   AGE    IP             NODE                       NOMINATED NODE   READINESS GATES
+etcd-master0.ocp4.example.com                 1/1     Running     0          14m    192.168.9.97   master0.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-2jnj2            0/1     Running     1          2d2h   192.168.9.98   master1.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-67qtx            1/1     Running     1          2d2h   192.168.9.97   master0.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-lvckp            0/1     Running     1          2d2h   192.168.9.99   master2.ocp4.example.com   <none>           <none>
+installer-10-master0.ocp4.example.com         0/1     Completed   0          2d2h   10.128.0.81    master0.ocp4.example.com   <none>           <none>
+installer-10-master1.ocp4.example.com         0/1     Completed   0          2d2h   10.129.0.41    master1.ocp4.example.com   <none>           <none>
+installer-10-master2.ocp4.example.com         0/1     Completed   0          2d2h   10.130.0.29    master2.ocp4.example.com   <none>           <none>
+installer-11-master0.ocp4.example.com         0/1     Completed   0          2d2h   10.128.0.84    master0.ocp4.example.com   <none>           <none>
+installer-11-master1.ocp4.example.com         0/1     Completed   0          2d2h   10.129.0.48    master1.ocp4.example.com   <none>           <none>
+installer-11-master2.ocp4.example.com         0/1     Completed   0          2d2h   10.130.0.34    master2.ocp4.example.com   <none>           <none>
+installer-7-master0.ocp4.example.com          0/1     Completed   0          2d2h   10.128.0.68    master0.ocp4.example.com   <none>           <none>
+installer-7-master1.ocp4.example.com          0/1     Completed   0          2d2h   10.129.0.27    master1.ocp4.example.com   <none>           <none>
+installer-9-master0.ocp4.example.com          0/1     Completed   0          2d2h   10.128.0.72    master0.ocp4.example.com   <none>           <none>
+installer-9-master2.ocp4.example.com          0/1     Completed   0          2d2h   10.130.0.20    master2.ocp4.example.com   <none>           <none>
+revision-pruner-10-master0.ocp4.example.com   0/1     Completed   0          2d2h   10.128.0.76    master0.ocp4.example.com   <none>           <none>
+revision-pruner-10-master1.ocp4.example.com   0/1     Completed   0          2d2h   10.129.0.40    master1.ocp4.example.com   <none>           <none>
+revision-pruner-10-master2.ocp4.example.com   0/1     Completed   0          2d2h   10.130.0.23    master2.ocp4.example.com   <none>           <none>
+revision-pruner-11-master0.ocp4.example.com   0/1     Completed   0          2d2h   10.128.0.83    master0.ocp4.example.com   <none>           <none>
+revision-pruner-11-master1.ocp4.example.com   0/1     Completed   0          2d2h   10.129.0.47    master1.ocp4.example.com   <none>           <none>
+revision-pruner-11-master2.ocp4.example.com   0/1     Completed   0          2d2h   10.130.0.33    master2.ocp4.example.com   <none>           <none>
+revision-pruner-9-master0.ocp4.example.com    0/1     Completed   0          2d2h   10.128.0.74    master0.ocp4.example.com   <none>           <none>
+revision-pruner-9-master1.ocp4.example.com    0/1     Completed   0          2d2h   10.129.0.37    master1.ocp4.example.com   <none>           <none>
+revision-pruner-9-master2.ocp4.example.com    0/1     Completed   0          2d2h   10.130.0.19    master2.ocp4.example.com   <none>           <none>
 
 
 ```
