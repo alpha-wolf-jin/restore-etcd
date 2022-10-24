@@ -17,12 +17,12 @@ git add . ; git commit -a -m "update README" ; git push -u origin main
 
 https://access.redhat.com/solutions/5843611
 
-**Create a project.
+**Create a project**
 ```
 # oc new-project ocp-etcd-backup --description "Openshift Backup Automation Tool" --display-name "Backup ETCD Automation"
 ```
 
-**Create Service Account
+**Create Service Account**
 ```
 # cat sa-etcd-bkp.yml 
 ---
@@ -38,7 +38,7 @@ metadata:
 
 ```
 
-**Create ClusterRole
+**Create ClusterRole**
 ```
 # cat cluster-role-etcd-bkp.yml
 ---
@@ -60,7 +60,7 @@ rules:
 # oc apply -f cluster-role-etcd-bkp.yml
 ```
 
-**Create ClusterRoleBinding
+**Create ClusterRoleBinding**
 ```
 # cat cluster-role-binding-etcd-bkp.yml
 ---
@@ -82,7 +82,7 @@ roleRef:
 # oc apply -f cluster-role-binding-etcd-bkp.yml
 ```
 
-**Add service account to SCC "privileged"
+**Add service account to SCC "privileged"**
 ```
 # oc adm policy add-scc-to-user privileged -z openshift-backup
 ```
@@ -132,10 +132,8 @@ spec:
 # oc apply -f cronjob-etcd-bkp.yml
 ```
 
-**After creating CronJob, you can force the execution for validation with the command:
+**After creating CronJob, you can force the execution for validation with the command:**
 ```
-# oc create job backup-02 --from=cronjob/openshift-backup
-
 # oc create job backup-02 --from=cronjob/openshift-backup
 
 # oc get pod
@@ -194,7 +192,7 @@ total 121316
 
 ```
 
-**Stop the static pods on any other control plane nodes - master1.ocp4.example.com
+**Stop the static pods on any other control plane nodes - master1.ocp4.example.com**
 
 ```
 # ssh core@master1.ocp4.example.com
@@ -226,11 +224,11 @@ Move the etcd data directory to a different location:
 [core@master1 ~]$ sudo mv /var/lib/etcd/ /tmp
 ```
 
-**Stop the static pods on any other control plane nodes - master2.ocp4.example.com
+**Stop the static pods on any other control plane nodes - master2.ocp4.example.com**
 
 Same steps on master1
 
-**Run the restore script on the recovery control plane host and pass in the path to the etcd backup directory
+**Run the restore script on the recovery control plane host and pass in the path to the etcd backup directory**
 ```
 [core@master0 ~]$ sudo -E /usr/local/bin/cluster-restore.sh /home/core/backup
 fe85795645d02ddfa993a7714a21a52a49e97fea687dfe7bf61f47dbf788cec6
@@ -267,7 +265,7 @@ static-pod-resources/kube-scheduler-pod-8/kube-scheduler-pod.yaml
 
 ```
 
-**Check the nodes to ensure they are in the Ready state.
+**Check the nodes to ensure they are in the Ready state.**
 ```
 
 ```
