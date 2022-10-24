@@ -226,8 +226,13 @@ Move the etcd data directory to a different location:
 
 **Stop the static pods on any other control plane nodes - master2.ocp4.example.com**
 
-Same steps on master1
+On master2, repeat the same steps
 
+Once finish the same steps on both master1 & master2, ocp is down
+```
+# oc get node
+Unable to connect to the server: EOF
+```
 **Run the restore script on the recovery control plane host and pass in the path to the etcd backup directory**
 ```
 [core@master0 ~]$ sudo -E /usr/local/bin/cluster-restore.sh /home/core/backup
@@ -267,9 +272,120 @@ static-pod-resources/kube-scheduler-pod-8/kube-scheduler-pod.yaml
 
 **Check the nodes to ensure they are in the Ready state.**
 ```
+# oc get node
+NAME                       STATUS   ROLES    AGE   VERSION
+master0.ocp4.example.com   Ready    master   38h   v1.23.5+8471591
+master1.ocp4.example.com   Ready    master   38h   v1.23.5+8471591
+master2.ocp4.example.com   Ready    master   38h   v1.23.5+8471591
+worker0.ocp4.example.com   Ready    worker   38h   v1.23.5+8471591
+worker1.ocp4.example.com   Ready    worker   37h   v1.23.5+8471591
 
 ```
-`
+If any nodes are in the NotReady state, log in to the nodes and remove all of the PEM files from the /var/lib/kubelet/pki directory on each node. You can SSH into the nodes or use the terminal window in the web console.
 
+**Restart the kubelet service on all control plane hosts**
 
+From the recovery host, run the following command:
+```
+# oc get project
+Error from server (ServiceUnavailable): the server is currently unable to handle the request (get projects.project.openshift.io)
 
+[core@master0 ~]$ sudo systemctl restart kubelet.service
+
+[core@master0 ~]$ sudo systemctl status kubelet.service
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 01:57:16 UTC; 48s ago
+  Process: 69675 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 69673 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 69671 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 69677 (kubelet)
+    Tasks: 16 (limit: 63249)
+   Memory: 96.0M
+      CPU: 3.856s
+   CGroup: /system.slice/kubelet.service
+           └─69677 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/va>
+
+Oct 24 01:58:03 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:03.817675   69677 kubelet_node_status.go:94] "Unable to regi>
+Oct 24 01:58:03 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:03.901279   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.001722   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: I1024 01:58:04.043672   69677 csi_plugin.go:1063] Failed to contact API >
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.102008   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.202126   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.302268   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.403049   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.503980   69677 kubelet.go:2484] "Error getting node" err=>
+Oct 24 01:58:04 master0.ocp4.example.com hyperkube[69677]: E1024 01:58:04.604650   69677 kubelet.go:2484] "Error getting node" err=>
+~
+~
+
+```
+
+**Repeat this step on all other control plane hosts.**
+On master1
+```
+[core@master1 ~]$ sudo systemctl restart kubelet.service
+
+[core@master1 ~]$ sudo systemctl status kubelet.service
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 01:59:14 UTC; 42s ago
+  Process: 114004 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 114002 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 114000 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 114006 (kubelet)
+    Tasks: 16 (limit: 63249)
+   Memory: 72.3M
+      CPU: 2.155s
+   CGroup: /system.slice/kubelet.service
+           └─114006 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/v>
+
+Oct 24 01:59:55 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:55.571293  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:55 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:55.671791  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:55 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:55.772523  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:55 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:55.873274  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:55 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:55.974021  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:56.074747  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:56.175450  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:56.276580  114006 kubelet.go:2484] "Error getting node" err>
+Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: I1024 01:59:56.288444  114006 csi_plugin.go:1063] Failed to contact API>
+Oct 24 01:59:56 master1.ocp4.example.com hyperkube[114006]: E1024 01:59:56.377582  114006 kubelet.go:2484] "Error getting node" err>
+[core@master1 ~]$ 
+
+```
+On master2
+```
+[core@master2 ~]$ sudo systemctl restart kubelet.service
+[core@master2 ~]$ sudo systemctl status kubelet.service
+● kubelet.service - Kubernetes Kubelet
+   Loaded: loaded (/etc/systemd/system/kubelet.service; enabled; vendor preset: disabled)
+  Drop-In: /etc/systemd/system/kubelet.service.d
+           └─10-mco-default-env.conf, 10-mco-default-madv.conf, 20-logging.conf, 20-nodenet.conf
+   Active: active (running) since Mon 2022-10-24 02:02:02 UTC; 6s ago
+  Process: 58672 ExecStartPre=/bin/rm -f /var/lib/kubelet/memory_manager_state (code=exited, status=0/SUCCESS)
+  Process: 58670 ExecStartPre=/bin/rm -f /var/lib/kubelet/cpu_manager_state (code=exited, status=0/SUCCESS)
+  Process: 58668 ExecStartPre=/bin/mkdir --parents /etc/kubernetes/manifests (code=exited, status=0/SUCCESS)
+ Main PID: 58674 (kubelet)
+    Tasks: 17 (limit: 63249)
+   Memory: 53.9M
+      CPU: 898ms
+   CGroup: /system.slice/kubelet.service
+           └─58674 kubelet --config=/etc/kubernetes/kubelet.conf --bootstrap-kubeconfig=/etc/kubernetes/kubeconfig --kubeconfig=/va>
+
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: I1024 02:02:08.812398   58674 kubelet_node_status.go:590] "Recording eve>
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: I1024 02:02:08.812406   58674 kubelet_node_status.go:590] "Recording eve>
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: I1024 02:02:08.812421   58674 kubelet_node_status.go:72] "Attempting to >
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:08.813800   58674 kubelet_node_status.go:94] "Unable to regi>
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:08.832904   58674 kubelet.go:2484] "Error getting node" err=>
+Oct 24 02:02:08 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:08.933550   58674 kubelet.go:2484] "Error getting node" err=>
+Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:09.034487   58674 kubelet.go:2484] "Error getting node" err=>
+Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:09.134960   58674 kubelet.go:2484] "Error getting node" err=>
+Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: W1024 02:02:09.177819   58674 reflector.go:324] k8s.io/client-go/informe>
+Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:09.177848   58674 reflector.go:138] k8s.io/client-go/informe>
+[core@master2 ~]$ 
+
+```
