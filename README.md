@@ -389,3 +389,16 @@ Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:09.177848
 [core@master2 ~]$ 
 
 ```
+
+**Approve the pending CSRs:**
+```
+# oc get node
+NAME                       STATUS     ROLES    AGE   VERSION
+master0.ocp4.example.com   NotReady   master   38h   v1.23.5+8471591
+master1.ocp4.example.com   NotReady   master   38h   v1.23.5+8471591
+master2.ocp4.example.com   NotReady   master   38h   v1.23.5+8471591
+worker0.ocp4.example.com   NotReady   worker   38h   v1.23.5+8471591
+worker1.ocp4.example.com   NotReady   worker   38h   v1.23.5+8471591
+
+
+```
