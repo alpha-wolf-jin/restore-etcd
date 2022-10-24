@@ -477,7 +477,7 @@ Oct 24 02:02:09 master2.ocp4.example.com hyperkube[58674]: E1024 02:02:09.177848
 
 ```
 
-**Approve the pending CSRs:**
+**Approve the pending CSRs (if needed):**
 ```
 # oc get node
 NAME                       STATUS     ROLES    AGE   VERSION
@@ -513,5 +513,28 @@ revision-pruner-9-master0.ocp4.example.com    0/1     Completed   0          2d2
 revision-pruner-9-master1.ocp4.example.com    0/1     Completed   0          2d2h   10.129.0.37    master1.ocp4.example.com   <none>           <none>
 revision-pruner-9-master2.ocp4.example.com    0/1     Completed   0          2d2h   10.130.0.19    master2.ocp4.example.com   <none>           <none>
 
+
+```
+
+**Verify that the single member control plane has started successfully.**
+
+From the recovery host, verify that the etcd container is running.
+
+```
+[core@master0 ~]$ sudo crictl ps | grep etcd | grep -v operator
+0c7adf1fe89dd       76f536e1fd2c0c776f71232f0318b4995c54beb708add1f958ad4924acd130b3                                                             23 minutes ago      Running             etcd                                          0                   4bcb94fbcac74
+[core@master0 ~]$ 
+
+[root@helper ~]# oc get pods -n openshift-etcd | grep -v etcd-quorum-guard | grep etcd
+etcd-master0.ocp4.example.com                 1/1     Running     0          20m
+
+```
+
+
+```
+[core@master1 ~]$ sudo crictl ps | grep etcd | grep -v operator
+[core@master1 ~]$ 
+[core@master2 ~]$ sudo crictl ps | grep etcd | grep -v operator
+[core@master2 ~]$ 
 
 ```
