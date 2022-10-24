@@ -7,7 +7,7 @@ git add README.md
 git commit -m "first commit"
 git branch -M main
 git remote add origin https://github.com/alpha-wolf-jin/restore-etcd.git
-git config --global credential.helper 'cache --timeout 7200'
+git config --global credential.helper 'cache --timeout 72000'
 git push -u origin main
 
 git add . ; git commit -a -m "update README" ; git push -u origin main
@@ -176,9 +176,9 @@ total 72960
 
 # Restoring to a previous cluster state
 
-**Select a control plane host to use as the recovery host - master0.ocp4.example.com
+**Select a control plane host to use as the recovery host - master0.ocp4.example.com**
 
-**Copy the etcd backup directory to the recovery control plane host
+**Copy the etcd backup directory to the recovery control plane host**
 
 ```
 # ll /root/labs/nfs01/backup/
