@@ -174,6 +174,8 @@ total 72960
 
 # Restoring to a previous cluster state
 
+https://docs.openshift.com/container-platform/4.10/backup_and_restore/control_plane_backup_and_restore/disaster_recovery/scenario-2-restoring-cluster-state.html
+
 **Select a control plane host to use as the recovery host - master0.ocp4.example.com**
 
 **Copy the etcd backup directory to the recovery control plane host**
