@@ -285,6 +285,37 @@ master2.ocp4.example.com   Ready    master   38h   v1.23.5+8471591
 worker0.ocp4.example.com   Ready    worker   38h   v1.23.5+8471591
 worker1.ocp4.example.com   Ready    worker   37h   v1.23.5+8471591
 
+[root@helper ~]# oc project
+Using project "openshift-etcd" on server "https://api.ocp4.example.com:6443".
+
+[root@helper ~]# oc get pod -o wide
+NAME                                          READY   STATUS      RESTARTS       AGE    IP             NODE                       NOMINATED NODE   READINESS GATES
+etcd-master0.ocp4.example.com                 1/1     Running     0              44s    192.168.9.97   master0.ocp4.example.com   <none>           <none>
+etcd-master1.ocp4.example.com                 5/5     Running     11 (25m ago)   4d6h   192.168.9.98   master1.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-2jnj2            1/1     Running     2              4d6h   192.168.9.98   master1.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-67qtx            1/1     Running     2              4d6h   192.168.9.97   master0.ocp4.example.com   <none>           <none>
+etcd-quorum-guard-78f4445675-lvckp            0/1     Running     2              4d6h   192.168.9.99   master2.ocp4.example.com   <none>           <none>
+installer-10-master0.ocp4.example.com         ...
+
+[root@helper ~]# oc rsh etcd-master0.ocp4.example.com
+sh-4.4# etcdctl member list -w table
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+|        ID        | STATUS  |           NAME           |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+| 25c66a8efe608db4 | started | master0.ocp4.example.com | https://192.168.9.97:2380 | https://192.168.9.97:2379 |      false |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+sh-4.4# etcdctl endpoint status -w table
+{"level":"warn","ts":"2022-10-26T10:30:44.067Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0000f0c40/192.168.9.97:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.98:2379: connect: connection refused\""}
+Failed to get the status of endpoint https://192.168.9.98:2379 (context deadline exceeded)
+{"level":"warn","ts":"2022-10-26T10:30:49.068Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0000f0c40/192.168.9.97:2379","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: Error while dialing dial tcp 192.168.9.99:2379: connect: connection refused\""}
+Failed to get the status of endpoint https://192.168.9.99:2379 (context deadline exceeded)
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+|         ENDPOINT          |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| https://192.168.9.97:2379 | 25c66a8efe608db4 |   3.5.3 |   81 MB |      true |      false |         2 |       2285 |               2285 |        |
++---------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+sh-4.4# 
+
 ```
 If any nodes are in the NotReady state, log in to the nodes and remove all of the PEM files from the /var/lib/kubelet/pki directory on each node. You can SSH into the nodes or use the terminal window in the web console.
 
@@ -585,6 +616,10 @@ After these machines are recreated, a new revision is forced and etcd scales up 
 If you are running installer-provisioned infrastructure, or you used the Machine API to create your machines, follow these steps. Otherwise, you must create the new control plane node using the same method that was used to originally create it.
 
 ```
+[root@helper ~]# oc adm cordon master2.ocp4.example.com
+
+[root@helper ~]# oc adm drain master2.ocp4.example.com
+
 [root@helper ~]# oc delete node master2.ocp4.example.com
 node "master2.ocp4.example.com" deleted
 [root@helper ~]# oc get node
@@ -658,4 +693,93 @@ ocp-etcd-backup                                    Backup ETCD Automation   Acti
 ocp-etcd-restore                                                            Active
 openshift-etcd                                                              Active
 openshift-etcd-operator                                                     Active
+```
+
+# Issue 01
+
+The etcd master1 is unhealthy after master1 reprovision
+
+```
+[root@helper ~]# oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.10.37   True        False         False      81s     
+baremetal                                  4.10.37   True        False         False      4d11h   
+cloud-controller-manager                   4.10.37   True        False         False      4d11h   
+cloud-credential                           4.10.37   True        False         False      4d11h   
+cluster-autoscaler                         4.10.37   True        False         False      4d11h   
+config-operator                            4.10.37   True        False         False      4d11h   
+console                                    4.10.37   True        False         False      48m     
+csi-snapshot-controller                    4.10.37   True        False         False      4d11h   
+dns                                        4.10.37   True        False         False      4d11h   
+etcd                                       4.10.37   True        True          True       4d11h   ClusterMemberControllerDegraded: unhealthy members found during reconciling members...
+
+[root@helper ~]# oc get pod
+NAME                                          READY   STATUS             RESTARTS        AGE
+etcd-master0.ocp4.example.com                 5/5     Running            1 (7m45s ago)   10m
+etcd-master1.ocp4.example.com                 4/5     CrashLoopBackOff   5 (71s ago)     4m38s
+etcd-master2.ocp4.example.com                 5/5     Running            0               5m59s
+etcd-quorum-guard-78f4445675-67qtx            1/1     Running            2               4d11h
+etcd-quorum-guard-78f4445675-7trsq            1/1     Running            0               55m
+etcd-quorum-guard-78f4445675-vtjdm            0/1     Running            0               15m
+
+[root@helper ~]# oc logs -f etcd-master1.ocp4.example.com 
+error: a container name must be specified for pod etcd-master1.ocp4.example.com, choose one of: [etcdctl etcd etcd-metrics etcd-health-monitor etcd-readyz] or one of the init containers: [setup etcd-ensure-env-vars etcd-resources-copy]
+
+```
+After restart "sudo systemctl restart kubelet.service", problem is still there.
+
+Fixed by:
+https://access.redhat.com/solutions/6962106
+
+Login to healthy etcd pod
+```
+[root@helper ~]# oc rsh etcd-master0.ocp4.example.com
+Defaulted container "etcdctl" out of: etcdctl, etcd, etcd-metrics, etcd-health-monitor, etcd-readyz, setup (init), etcd-ensure-env-vars (init), etcd-resources-copy (init)
+sh-4.4# etcdctl member list -w table
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+|        ID        | STATUS  |           NAME           |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+| 78940173c2f90b41 | started | master2.ocp4.example.com | https://192.168.9.99:2380 | https://192.168.9.99:2379 |      false |
+| 970b4d82f2cafa84 | started | master0.ocp4.example.com | https://192.168.9.97:2380 | https://192.168.9.97:2379 |      false |
+| cf7e63eb1a53aa50 | started | master1.ocp4.example.com | https://192.168.9.98:2380 | https://192.168.9.98:2379 |      false |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+sh-4.4# etcdctl member remove cf7e63eb1a53aa50
+Member cf7e63eb1a53aa50 removed from cluster a60a6e9c241554db
+sh-4.4# 
+sh-4.4# etcdctl member remove cf7e63eb1a53aa50
+{"level":"warn","ts":"2022-10-26T14:57:39.970Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0004468c0/192.168.9.97:2379","attempt":0,"error":"rpc error: code = NotFound desc = etcdserver: member not found"}
+Error: etcdserver: member not found
+sh-4.4# etcdctl member list -w table
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+|        ID        | STATUS  |           NAME           |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+| 78940173c2f90b41 | started | master2.ocp4.example.com | https://192.168.9.99:2380 | https://192.168.9.99:2379 |      false |
+| 970b4d82f2cafa84 | started | master0.ocp4.example.com | https://192.168.9.97:2380 | https://192.168.9.97:2379 |      false |
++------------------+---------+--------------------------+---------------------------+---------------------------+------------+
+
+sh-4.4# exit
+exit
+[root@helper ~]# oc patch etcd cluster -p='{"spec": {"forceRedeploymentReason": "single-master-recovery-'"$( date --rfc-3339=ns )"'"}}' --type=merge
+etcd.operator.openshift.io/cluster patched
+[root@helper ~]# 
+
+```
+
+**Wait for 10 mins...**
+
+```
+[root@helper ~]# oc get pod
+NAME                                          READY   STATUS      RESTARTS   AGE
+etcd-master0.ocp4.example.com                 5/5     Running     0          5m14s
+etcd-master1.ocp4.example.com                 5/5     Running     0          82s
+etcd-master2.ocp4.example.com                 5/5     Running     0          3m23s
+etcd-quorum-guard-78f4445675-67qtx            1/1     Running     2          4d11h
+etcd-quorum-guard-78f4445675-7trsq            1/1     Running     0          69m
+etcd-quorum-guard-78f4445675-vtjdm            1/1     Running     0          28m
+
+[root@helper ~]# oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+...
+etcd                                       4.10.37   True        False         False      4d11h   
+...
 ```
